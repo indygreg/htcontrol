@@ -80,9 +80,9 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\EmotivaComponent\EmotivaComponent\EmotivaComponent.csproj">
-      <Project>{86E682C3-0B0F-4B48-8315-C72F65291EE9}</Project>
-      <Name>EmotivaComponent</Name>
+    <ProjectReference Include="..\SerialControl\SerialControl.csproj">
+      <Project>{5A1D3996-025A-474B-802F-68A510B9B7EB}</Project>
+      <Name>SerialControl</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -9,6 +9,7 @@ using System.Windows.Forms;
 using System.IO.Ports;
 using System.IO;
 using System.Xml.Serialization;
+using SerialControl;
 
 namespace EmotivaControl
 {
@@ -16,9 +17,8 @@ namespace EmotivaControl
     {
         private const int WM_APP = 0x8000;
 
-        protected EmotivaComponent.Processor _processor;
+        protected EmotivaPrePro _processor;
         protected SerialPort _port;
-        protected Settings _settings;
 
         public EmotivaControlForm()
         {
@@ -29,18 +29,9 @@ namespace EmotivaControl
                 comboBoxPorts.Items.Add(s);
             }
 
-            _settings = ReadConfigFile();
-
             if (comboBoxPorts.Items.Count >= 1)
             {
-                if (_settings.Port != null && comboBoxPorts.Items.Contains(_settings.Port))
-                {
-                    comboBoxPorts.SelectedIndex = comboBoxPorts.Items.IndexOf(_settings.Port);
-                }
-                else
-                {
                     comboBoxPorts.SelectedIndex = 0;
-                }
             }
             else
             {
@@ -74,35 +65,6 @@ namespace EmotivaControl
                     break;
             }
             base.WndProc(ref m);
-        }
-
-
-        public Settings ReadConfigFile()
-        {
-            FileInfo sf = new FileInfo(System.Environment.CurrentDirectory + "\\settings.xml");
-            Settings settings = new Settings();
-
-            if (sf.Exists)
-            {
-                
-                XmlSerializer s = new XmlSerializer(typeof(Settings));
-                TextReader r = new StreamReader(sf.FullName);
-
-                settings = (Settings)s.Deserialize(r);
-                r.Close();
-            }
-
-            return settings;
-        }
-
-        private void btnSave_Click(object sender, EventArgs e)
-        {
-            FileInfo sf = new FileInfo(System.Environment.CurrentDirectory + "\\settings.xml");
-            XmlSerializer s = new XmlSerializer(typeof(Settings));
-            TextWriter w = new StreamWriter(sf.FullName);
-            s.Serialize(w, _settings);
-            w.Close();
-
         }
 
         private void Form1_Resize(object sender, System.EventArgs e)
@@ -217,9 +179,7 @@ namespace EmotivaControl
         {
             String port = comboBoxPorts.SelectedItem.ToString();
 
-            _settings.Port = port;
-
-            _processor = new EmotivaComponent.Processor(port);
+            _processor = new EmotivaPrePro(port);
 
            _port = _processor.GetSerialPort();
 

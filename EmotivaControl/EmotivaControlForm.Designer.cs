@@ -275,7 +275,6 @@
             this.btnSave.TabIndex = 16;
             this.btnSave.Text = "Save Settings";
             this.btnSave.UseVisualStyleBackColor = true;
-            this.btnSave.Click += new System.EventHandler(this.btnSave_Click);
             // 
             // Form1
             // 
