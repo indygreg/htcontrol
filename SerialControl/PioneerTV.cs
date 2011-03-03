@@ -1,5 +1,5 @@
 ﻿
-namespace HomeTheater
+namespace SerialControl
 {
     using System;
 

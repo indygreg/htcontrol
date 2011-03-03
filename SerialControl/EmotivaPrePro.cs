@@ -6,7 +6,7 @@ using System.IO.Ports;
 using System.IO;
 using System.Xml.Serialization;
 
-namespace EmotivaComponent
+namespace SerialControl
 {
     public class EmotivaException : Exception
     {
@@ -25,12 +25,6 @@ namespace EmotivaComponent
         public EmotivaPrePro(string port)
         {
             _port = port;
-            _InitPort();
-        }
-
-        public EmotivaPrePro(Settings settings)
-        {
-            _port = settings.Port;
             _InitPort();
         }
 
