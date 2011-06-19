@@ -13,7 +13,7 @@ namespace SerialControl
         public PioneerTv(string port)
             : base(port)
         {
-            sp.ReadTimeout = 1000;
+            //sp.ReadTimeout = 1000;
 
             this.RefreshStatus();
         }
@@ -109,7 +109,8 @@ namespace SerialControl
 
             DateTime started = DateTime.Now;
 
-            while (sp.BytesToRead < 5 || DateTime.Now - started < new TimeSpan(0, 0, 1))
+            /*
+            while (this.sp == null || sp.BytesToRead < 5 || DateTime.Now - started < new TimeSpan(0, 0, 1))
             {
                 ;
             }
@@ -118,13 +119,15 @@ namespace SerialControl
             {
                 return "";
             }
-
+            
             int toRead = sp.BytesToRead;
 
             byte[] response = new byte[toRead];
             int read = sp.Read(response, 0, toRead);
 
             return System.Text.ASCIIEncoding.ASCII.GetString(response, read == 5 ? 1 : 4, 3);
+             */
+            return "";
         }
 
         public string SendCommand(string command)

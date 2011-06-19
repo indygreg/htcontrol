@@ -181,7 +181,7 @@ namespace EmotivaControl
 
             _processor = new EmotivaPrePro(port);
 
-           _port = _processor.GetSerialPort();
+           //_port = _processor.GetSerialPort();
 
         }
 

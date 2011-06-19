@@ -42,43 +42,64 @@ namespace HTControl {
                     break;
 
                 case SpeechControl.ComponentControl.SpeechCommand.WatchTelevision:
-                    if(!this.PrePro.PoweredOn)
-                        this.PrePro.PowerOn();
+                    this.SendCommands(() =>
+                    {
+                        if(!this.PrePro.PoweredOn)
+                            this.PrePro.PowerOn();
 
-                    this.PrePro.PowerOn();
-                    if(!this.TV.PoweredOn)
-                        this.TV.PowerOn();
+                        this.PrePro.InputSAT();
+                        return true;
 
-                    this.TV.SetInputHDMI1();
-                    this.PrePro.InputSAT();
-                    this.TV.SetVolume(0);
+                    }, () =>
+                    {
+                        if(!this.TV.PoweredOn)
+                            this.TV.PowerOn();
+
+                        this.TV.SetInputHDMI1();
+                        this.TV.SetVolume(0);
+                        return true;
+                    });
                     break;
 
                 case SpeechControl.ComponentControl.SpeechCommand.WatchMovie:
-                    if(!this.PrePro.PoweredOn)
-                        this.PrePro.PowerOn();
+                    this.SendCommands(() =>
+                    {
+                        if(!this.PrePro.PoweredOn)
+                            this.PrePro.PowerOn();
 
-                    if(!this.TV.PoweredOn)
-                        this.TV.PowerOn();
+                        this.PrePro.InputDVD();
+                        this.PrePro.Input8Channel();
 
-                    this.TV.SetInputHDMI1();
-                    this.TV.SetVolume(0);
-                    this.PrePro.PowerOn();
-                    this.PrePro.InputDVD();
-                    this.PrePro.Input8Channel();
+                        return true;
+                    },
+                    () =>
+                    {
 
+                        if(!this.TV.PoweredOn)
+                            this.TV.PowerOn();
+
+                        this.TV.SetInputHDMI1();
+                        this.TV.SetVolume(0);
+
+                        return true;
+                    });
                     break;
 
                 case SpeechControl.ComponentControl.SpeechCommand.ViewComputer:
-                    if(!this.PrePro.PoweredOn)
-                        this.PrePro.PowerOn();
+                    this.SendCommands(() =>
+                    {
+                        if(!this.TV.PoweredOn)
+                            this.TV.PowerOn();
 
-                    if(!this.TV.PoweredOn)
-                        this.TV.PowerOn();
+                        this.TV.SetInputHDMI2();
+                        this.TV.SetVolume(20);
 
-                    this.TV.SetInputHDMI2();
-                    this.TV.SetVolume(20);
-                    this.PrePro.PowerOff();
+                        return true;
+                    }, () =>
+                    {
+                        this.PrePro.PowerOff();
+                        return true;
+                    });
 
                     break;
 
@@ -106,6 +127,26 @@ namespace HTControl {
         public void Dispose() {
             if (this.SpeechThread != null && this.SpeechThread.IsAlive)
                 this.SpeechThread.Abort();
+        }
+
+        protected void SendCommands(params Func<Boolean>[] expressions) {
+            var threads = new List<Thread>();
+
+            foreach (var expression in expressions) {
+                var thread = new Thread(() => { expression(); });
+                thread.SetApartmentState(ApartmentState.MTA);
+                thread.Start();
+                threads.Add(thread);
+            }
+
+            foreach (var thread in threads)
+            {
+                thread.Join(15000);
+                if (thread.IsAlive)
+                {
+                    thread.Abort();
+                }
+            }
         }
     }
 }

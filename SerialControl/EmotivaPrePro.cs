@@ -17,50 +17,28 @@ namespace SerialControl
         }
     }
 
-    public class EmotivaPrePro
+    public class EmotivaPrePro : SerialControlledDevice
     {
-        private static TimeSpan MinimumCommandDelay = TimeSpan.FromMilliseconds(100);
-
-        protected String _port;
-        protected SerialPort _sp;
-        protected DateTime LastCommandTime = DateTime.UtcNow;
-        protected TimeSpan? LastCommandDelay;
-
         public Boolean PoweredOn { get; protected set; }
 
-        public EmotivaPrePro(string port)
+        public EmotivaPrePro(string port) : base(port)
         {
-            _port = port;
-            _InitPort();
-        }
-
-        protected void _InitPort()
-        {
-            _sp = new SerialPort(_port);
-            _sp.BaudRate = 9600;
-            _sp.Parity = 0;
-            _sp.StopBits = (StopBits)1;
-            _sp.DataBits = 8;
-
-            _sp.Open();
-            _sp.ReadTimeout = 1000;
-        }
-
-        public SerialPort GetSerialPort()
-        {
-            return _sp;
+            //this.sp.ReadTimeout = 1000;
         }
 
         public void SendCommand(String command)
         {
+            this.SendCommand(command, this.MinimumCommandDelay);
+        }
+
+        public void SendCommand(String command, TimeSpan delay) {
             byte[] bytes = new byte[command.Length];
 
-            for (int i = 0; i < command.Length; i++)
-            {
+            for(int i = 0; i < command.Length; i++) {
                 bytes[i] = Convert.ToByte(command[i]);
             }
 
-            this._write(bytes);
+            this.Write(bytes, delay);
         }
 
         // sends a command with an extension
@@ -78,37 +56,18 @@ namespace SerialControl
                 bytes[i + command.Length] = Convert.ToByte(extension[i]);
             }
 
-            this._write(bytes);
-        }
-
-        protected void _write(byte[] buffer)
-        {
-            var now = DateTime.UtcNow;
-
-            var lastDelay = this.LastCommandDelay.GetValueOrDefault(MinimumCommandDelay);
-
-            var elapsed = now - this.LastCommandTime;
-            if(elapsed < lastDelay) {
-                // TODO use of Thread.Sleep is extremely hacky
-                System.Threading.Thread.Sleep(lastDelay - elapsed);
-            }
-
-            _sp.Write(buffer, 0, buffer.Length);
-            this.LastCommandDelay = null;
-            this.LastCommandTime = DateTime.UtcNow;
+            this.Write(bytes);
         }
 
         public void PowerToggle()
         {
-            SendCommand("@111");
-            this.LastCommandDelay = TimeSpan.FromSeconds(3);
+            SendCommand("@111", TimeSpan.FromSeconds(3));
             this.PoweredOn = !this.PoweredOn;
         }
 
         public void PowerOn()
         {
-            SendCommand("@112");
-            this.LastCommandDelay = TimeSpan.FromSeconds(3);
+            SendCommand("@112", TimeSpan.FromSeconds(3));
             this.PoweredOn = true;
         }
 
