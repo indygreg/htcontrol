@@ -213,8 +213,9 @@ namespace SerialControl
 
         public int GetVolume()
         {
-            volume = int.Parse(SendCommand("VOL"));
-            return volume;
+            //volume = int.Parse(SendCommand("VOL"));
+            //return volume;
+            return 0;
         }
 
         public void OSDOff()
