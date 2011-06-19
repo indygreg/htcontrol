@@ -24,6 +24,9 @@ namespace SpeechControl
         public enum SpeechCommand {
             TelevisionOn,
             TelevisionOff,
+            WatchTelevision,
+            WatchMovie,
+            ViewComputer,
         }
 
         public delegate void SpeechCommandReceivedHandler(SpeechCommand command);
@@ -39,7 +42,7 @@ namespace SpeechControl
 
             this.AudioSource.FeatureMode = true;
             this.AudioSource.AutomaticGainControl = false;
-            this.AudioSource.SystemMode = SystemMode.OptibeamArrayAndAec;
+            this.AudioSource.SystemMode = SystemMode.OptibeamArrayOnly;
             this.AudioSource.BeamChanged += new EventHandler<BeamChangedEventArgs>(AudioSource_BeamChanged);
             
             this.Recognizer = SpeechRecognitionEngine.InstalledRecognizers().Where(r => r.Id == RecognizerId).FirstOrDefault();
@@ -60,6 +63,7 @@ namespace SpeechControl
             this.Engine.SpeechHypothesized += new EventHandler<SpeechHypothesizedEventArgs>(Engine_SpeechHypothesized);
 
             this.Engine.RecognizeAsync(RecognizeMode.Multiple);
+            Console.WriteLine("Speech recognition initialized");
         }
 
         void AudioSource_BeamChanged(object sender, BeamChangedEventArgs e)
@@ -82,6 +86,23 @@ namespace SpeechControl
             g.SpeechRecognized += TurnOffTelevision;
             this.Engine.LoadGrammar(g);
 
+            gb = new GrammarBuilder("watch television");
+            gb.Culture = this.Recognizer.Culture;
+            g = new Grammar(gb);
+            g.SpeechRecognized += WatchTelevision;
+            this.Engine.LoadGrammar(g);
+
+            gb = new GrammarBuilder("watch a movie");
+            gb.Culture = this.Recognizer.Culture;
+            g = new Grammar(gb);
+            g.SpeechRecognized += WatchMovie;
+            this.Engine.LoadGrammar(g);
+
+            gb = new GrammarBuilder("view computer");
+            gb.Culture = this.Recognizer.Culture;
+            g = new Grammar(gb);
+            g.SpeechRecognized += ViewComputer;
+            this.Engine.LoadGrammar(g);
         }
 
         void Engine_SpeechHypothesized(object sender, SpeechHypothesizedEventArgs e)
@@ -95,6 +116,18 @@ namespace SpeechControl
 
         void TurnOffTelevision(object sender, SpeechRecognizedEventArgs e) {
             this.RaiseEvent(e, SpeechCommand.TelevisionOff);
+        }
+
+        void WatchTelevision(object sender, SpeechRecognizedEventArgs e) {
+            this.RaiseEvent(e, SpeechCommand.WatchTelevision);
+        }
+
+        void WatchMovie(object sender, SpeechRecognizedEventArgs e) {
+            this.RaiseEvent(e, SpeechCommand.WatchMovie);
+        }
+
+        void ViewComputer(object sender, SpeechRecognizedEventArgs e) {
+            this.RaiseEvent(e, SpeechCommand.ViewComputer);
         }
 
         protected void RaiseEvent(SpeechRecognizedEventArgs e, SpeechCommand command) {
