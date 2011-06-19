@@ -26,6 +26,8 @@ namespace SerialControl
         protected DateTime LastCommandTime = DateTime.UtcNow;
         protected TimeSpan? LastCommandDelay;
 
+        public Boolean PoweredOn { get; protected set; }
+
         public EmotivaPrePro(string port)
         {
             _port = port;
@@ -99,17 +101,21 @@ namespace SerialControl
         public void PowerToggle()
         {
             SendCommand("@111");
+            this.LastCommandDelay = TimeSpan.FromSeconds(3);
+            this.PoweredOn = !this.PoweredOn;
         }
 
         public void PowerOn()
         {
             SendCommand("@112");
             this.LastCommandDelay = TimeSpan.FromSeconds(3);
+            this.PoweredOn = true;
         }
 
         public void PowerOff()
         {
             SendCommand("@113");
+            this.PoweredOn = false;
         }
 
         public void InputCD()
