@@ -19,8 +19,12 @@ namespace SerialControl
 
     public class EmotivaPrePro
     {
+        private static TimeSpan MinimumCommandDelay = TimeSpan.FromMilliseconds(100);
+
         protected String _port;
         protected SerialPort _sp;
+        protected DateTime LastCommandTime = DateTime.UtcNow;
+        protected TimeSpan? LastCommandDelay;
 
         public EmotivaPrePro(string port)
         {
@@ -77,7 +81,19 @@ namespace SerialControl
 
         protected void _write(byte[] buffer)
         {
+            var now = DateTime.UtcNow;
+
+            var lastDelay = this.LastCommandDelay.GetValueOrDefault(MinimumCommandDelay);
+
+            var elapsed = now - this.LastCommandTime;
+            if(elapsed < lastDelay) {
+                // TODO use of Thread.Sleep is extremely hacky
+                System.Threading.Thread.Sleep(lastDelay - elapsed);
+            }
+
             _sp.Write(buffer, 0, buffer.Length);
+            this.LastCommandDelay = null;
+            this.LastCommandTime = DateTime.UtcNow;
         }
 
         public void PowerToggle()
@@ -88,6 +104,7 @@ namespace SerialControl
         public void PowerOn()
         {
             SendCommand("@112");
+            this.LastCommandDelay = TimeSpan.FromSeconds(3);
         }
 
         public void PowerOff()
