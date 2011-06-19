@@ -148,6 +148,9 @@ namespace SerialControl
 
             string arg = String.Format("S0{0}", input.ToString());
 
+            if(this.input == arg)
+                return;
+
             SendCommand("INP", arg);
             this.input = arg;
         }
