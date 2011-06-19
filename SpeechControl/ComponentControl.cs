@@ -27,6 +27,7 @@ namespace SpeechControl
             WatchTelevision,
             WatchMovie,
             ViewComputer,
+            PowerOff,
         }
 
         public delegate void SpeechCommandReceivedHandler(SpeechCommand command);
@@ -103,6 +104,12 @@ namespace SpeechControl
             g = new Grammar(gb);
             g.SpeechRecognized += ViewComputer;
             this.Engine.LoadGrammar(g);
+
+            gb = new GrammarBuilder("power off");
+            gb.Culture = this.Recognizer.Culture;
+            g = new Grammar(gb);
+            g.SpeechRecognized += PowerOff;
+            this.Engine.LoadGrammar(g);
         }
 
         void Engine_SpeechHypothesized(object sender, SpeechHypothesizedEventArgs e)
@@ -128,6 +135,10 @@ namespace SpeechControl
 
         void ViewComputer(object sender, SpeechRecognizedEventArgs e) {
             this.RaiseEvent(e, SpeechCommand.ViewComputer);
+        }
+
+        void PowerOff(object sender, SpeechRecognizedEventArgs e) {
+            this.RaiseEvent(e, SpeechCommand.PowerOff);
         }
 
         protected void RaiseEvent(SpeechRecognizedEventArgs e, SpeechCommand command) {

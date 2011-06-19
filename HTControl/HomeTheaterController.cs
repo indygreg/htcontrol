@@ -70,6 +70,12 @@ namespace HTControl {
 
                     break;
 
+                case SpeechControl.ComponentControl.SpeechCommand.PowerOff:
+                    this.TV.PowerOff();
+                    this.PrePro.PowerOff();
+
+                    break;
+
                 default:
                     Console.WriteLine("Unknown speech command received");
 
