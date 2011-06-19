@@ -142,7 +142,7 @@ namespace SerialControl
 
         public void Input8Channel()
         {
-            SendCommand("@113");
+            SendCommand("@133");
         }
 
         public void DSPUp()
