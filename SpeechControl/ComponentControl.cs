@@ -28,6 +28,8 @@ namespace SpeechControl
             WatchMovie,
             ViewComputer,
             PowerOff,
+            ListenStereo,
+            ListenMulti,
         }
 
         public delegate void SpeechCommandReceivedHandler(SpeechCommand command);
@@ -81,13 +83,17 @@ namespace SpeechControl
             g.SpeechRecognized += new EventHandler<SpeechRecognizedEventArgs>(TurnOnTelevision);
             this.Engine.LoadGrammar(g);
 
-            gb = new GrammarBuilder("turn off television");
+            gb = new GrammarBuilder("turn off");
+            var choices = new Choices("television", "t v", "the tube");
+            gb.Append(choices);
             gb.Culture = this.Recognizer.Culture;
             g = new Grammar(gb);
             g.SpeechRecognized += TurnOffTelevision;
             this.Engine.LoadGrammar(g);
 
-            gb = new GrammarBuilder("watch television");
+            gb = new GrammarBuilder("watch");
+            choices = new Choices("television", "t v", "the tube");
+            gb.Append(choices);
             gb.Culture = this.Recognizer.Culture;
             g = new Grammar(gb);
             g.SpeechRecognized += WatchTelevision;
@@ -109,6 +115,14 @@ namespace SpeechControl
             gb.Culture = this.Recognizer.Culture;
             g = new Grammar(gb);
             g.SpeechRecognized += PowerOff;
+            this.Engine.LoadGrammar(g);
+
+            gb = new GrammarBuilder("listen to a");
+            gb.Culture = this.Recognizer.Culture;
+            choices = new Choices("c d", "album", "disc");
+            gb.Append(choices);
+            g = new Grammar(gb);
+            g.SpeechRecognized += ListenStereo;
             this.Engine.LoadGrammar(g);
         }
 
@@ -139,6 +153,10 @@ namespace SpeechControl
 
         void PowerOff(object sender, SpeechRecognizedEventArgs e) {
             this.RaiseEvent(e, SpeechCommand.PowerOff);
+        }
+
+        void ListenStereo(object sender, SpeechRecognizedEventArgs e) {
+            this.RaiseEvent(e, SpeechCommand.ListenStereo);
         }
 
         protected void RaiseEvent(SpeechRecognizedEventArgs e, SpeechCommand command) {

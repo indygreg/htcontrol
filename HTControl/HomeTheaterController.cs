@@ -9,6 +9,9 @@ namespace HTControl {
     /// Represents the master controller for the home theater
     /// </summary>
     public class HomeTheaterController : IDisposable {
+        private static string TelevisionPort = "COM3";
+        private static string PreProPort = "COM4";
+
         protected SpeechControl.ComponentControl SpeechComponentControl;
         protected Thread SpeechThread;
 
@@ -24,10 +27,9 @@ namespace HTControl {
             this.SpeechThread.SetApartmentState(ApartmentState.MTA);
             this.SpeechThread.Start();
 
-            this.TV = new SerialControl.PioneerTv("COM3");
-            this.PrePro = new SerialControl.EmotivaPrePro("COM4");
+            this.TV = new SerialControl.PioneerTv(TelevisionPort);
+            this.PrePro = new SerialControl.EmotivaPrePro(PreProPort);
         }
-
 
         protected void ProcessSpeechCommand(SpeechControl.ComponentControl.SpeechCommand command) {
             switch(command) {
@@ -40,6 +42,10 @@ namespace HTControl {
                     break;
 
                 case SpeechControl.ComponentControl.SpeechCommand.WatchTelevision:
+                    if(!this.PrePro.PoweredOn)
+                        this.PrePro.PowerOn();
+
+                    this.PrePro.PowerOn();
                     if(!this.TV.PoweredOn)
                         this.TV.PowerOn();
 
@@ -49,6 +55,9 @@ namespace HTControl {
                     break;
 
                 case SpeechControl.ComponentControl.SpeechCommand.WatchMovie:
+                    if(!this.PrePro.PoweredOn)
+                        this.PrePro.PowerOn();
+
                     if(!this.TV.PoweredOn)
                         this.TV.PowerOn();
 
@@ -61,6 +70,9 @@ namespace HTControl {
                     break;
 
                 case SpeechControl.ComponentControl.SpeechCommand.ViewComputer:
+                    if(!this.PrePro.PoweredOn)
+                        this.PrePro.PowerOn();
+
                     if(!this.TV.PoweredOn)
                         this.TV.PowerOn();
 
@@ -73,6 +85,14 @@ namespace HTControl {
                 case SpeechControl.ComponentControl.SpeechCommand.PowerOff:
                     this.TV.PowerOff();
                     this.PrePro.PowerOff();
+
+                    break;
+
+                case SpeechControl.ComponentControl.SpeechCommand.ListenStereo:
+                    if(!this.PrePro.PoweredOn)
+                        this.PrePro.PowerOn();
+
+                    this.PrePro.InputCD();
 
                     break;
 
