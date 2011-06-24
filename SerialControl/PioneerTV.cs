@@ -23,7 +23,7 @@ namespace SerialControl {
 
         protected Queue<String> Responses = new Queue<String>();
         protected Object Locker = new Object();
-        protected AutoResetEvent ResponsesAvailable = new AutoResetEvent(false); 
+        protected AutoResetEvent ResponsesAvailable = new AutoResetEvent(false);
 
         public PioneerTv(string port)
             : base(port) {
@@ -133,8 +133,8 @@ namespace SerialControl {
         protected override void OnAvailableBytes(byte[] buffer, int count) {
             // responses start with 0x02 and end with 0x03. everything in between is payload
             foreach(Byte b in buffer) {
-                if (this.ResponseState == ResponseParseState.Beginning) {
-                    if (b != 0x02) {
+                if(this.ResponseState == ResponseParseState.Beginning) {
+                    if(b != 0x02) {
                         throw new Exception("Unknown response format from TV");
                     }
 
@@ -145,7 +145,7 @@ namespace SerialControl {
                 // else we must be in the middle
 
                 // end of transmission
-                if (b == 0x03) {
+                if(b == 0x03) {
                     this.HandleFullResponse(this.PartialResponse);
                     this.ResponseState = ResponseParseState.Beginning;
                     this.PartialResponse = "";
@@ -216,6 +216,9 @@ namespace SerialControl {
             if(volume < 0 || volume > 60)
                 throw new ArgumentOutOfRangeException("volume must be between 0 and 60");
 
+            if(volume == this.volume)
+                return;
+
             string vol;
 
             // my n00b C# skills show
@@ -227,13 +230,19 @@ namespace SerialControl {
                 vol = "000";
             }
 
+            this.volume = volume;
+
             SendCommand("VOL", vol);
         }
 
         public int GetVolume() {
-            //volume = int.Parse(SendCommand("VOL"));
-            //return volume;
-            return 0;
+            Int32 vol;
+            if(Int32.TryParse(SendCommand("VOL"), out vol)) {
+                this.volume = vol;
+                return vol;
+            }
+
+            return -1;
         }
 
         public void OSDOff() {
