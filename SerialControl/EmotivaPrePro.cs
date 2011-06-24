@@ -19,7 +19,22 @@ namespace SerialControl
 
     public class EmotivaPrePro : SerialControlledDevice
     {
+        protected enum Input {
+            CD,
+            Tape,
+            SAT,
+            DVD,
+            Phono,
+            Tuner,
+            Vid1,
+            Vid2,
+            VCR,
+            EightChannel,
+        }
+
         protected static TimeSpan InputSwitchDelay = TimeSpan.FromMilliseconds(500);
+
+        protected Input CurrentInput;
 
         public Boolean PoweredOn { get; protected set; }
 
@@ -84,54 +99,62 @@ namespace SerialControl
             this.PoweredOn = false;
         }
 
+        protected void SetInput(String command, Input newInput) {
+            if(this.CurrentInput == newInput)
+                return;
+
+            this.CurrentInput = newInput;
+            this.SendCommand(command, InputSwitchDelay);
+        }
+
         public void InputCD()
         {
-            SendCommand("@114", InputSwitchDelay);
+            this.SetInput("@114", Input.CD);
         }
 
         public void InputTape()
         {
-            SendCommand("@115", InputSwitchDelay);
+            this.SetInput("@115", Input.Tape);
         }
 
         public void InputSAT()
         {
-            SendCommand("@116", InputSwitchDelay);
+            this.SetInput("@116", Input.SAT);
         }
 
         public void InputDVD()
         {
-            SendCommand("@117", InputSwitchDelay);
+            this.SetInput("@117", Input.DVD);
         }
 
         public void InputPhono()
         {
-            SendCommand("@118", InputSwitchDelay);
+            this.SetInput("@118", Input.Phono);
         }
 
         public void InputTuner()
         {
-            SendCommand("@119", InputSwitchDelay);
+            this.SetInput("@119", Input.Tuner);
         }
 
         public void InputVID1()
         {
-            SendCommand("@11A", InputSwitchDelay);
+            this.SetInput("@11A", Input.Vid1);
         }
 
         public void InputVCR()
         {
-            SendCommand("@11B", InputSwitchDelay);
+            this.SetInput("@11B", Input.VCR);
         }
 
         public void InputVID2()
         {
-            SendCommand("@11C", InputSwitchDelay);
+            this.SetInput("@11C", Input.Vid2);
         }
 
         public void Input8Channel()
         {
-            SendCommand("@133", InputSwitchDelay);
+            this.SetInput("@133", Input.EightChannel);
         }
 
         public void DSPUp()

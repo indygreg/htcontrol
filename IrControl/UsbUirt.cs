@@ -16,6 +16,7 @@ namespace HTControl.IrControl {
         public event GenericCommand OnDvrAv;
         public event GenericCommand OnDvrChannelUp;
         public event GenericCommand OnDvrChannelDown;
+        public event GenericCommand OnOppoOk;
 
         protected Dictionary<String, DateTime> LastSeen = new Dictionary<string, DateTime>();
         protected Object Locker = new Object();
@@ -65,6 +66,10 @@ namespace HTControl.IrControl {
 
                 case "2308150450A5":
                     ev = this.OnDvrChannelDown;
+                    break;
+
+                case "435B541051F4":
+                    ev = this.OnOppoOk;
                     break;
 
                 default:

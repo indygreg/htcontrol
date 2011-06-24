@@ -51,6 +51,7 @@ namespace HTControl {
             this.Ir.OnDvrChannelDown += WatchDvr;
             this.Ir.OnDvrChannelUp += WatchDvr;
             this.Ir.OnDvrAv += DvrOnAv;
+            this.Ir.OnOppoOk += WatchVideoOnOppo;
         }
 
         protected void ProcessSpeechCommand(SpeechControl.ComponentControl.SpeechCommand command) {
