@@ -47,7 +47,9 @@ namespace HTControl {
             this.Oppo.OnAudioTypeUpdate += OppoOnAudioUpdate;
             this.Oppo.OnPowerUpdate += OppoOnPowerUpdate;
 
-            this.Ir.OnDvrOk += DvrOnOk;
+            this.Ir.OnDvrOk += WatchDvr;
+            this.Ir.OnDvrChannelDown += WatchDvr;
+            this.Ir.OnDvrChannelUp += WatchDvr;
             this.Ir.OnDvrAv += DvrOnAv;
         }
 
@@ -178,17 +180,17 @@ namespace HTControl {
             }
         }
 
-        protected void DvrOnOk() {
+        protected void WatchDvr() {
+            if(!this.PrePro.PoweredOn)
+                this.PrePro.PowerOn();
+
+            this.PrePro.InputSAT();
+
             if(!this.TV.PoweredOn)
                 this.TV.PowerOn();
 
             this.TV.SetInputHDMI1();
             this.TV.SetVolume(0);
-
-            if(!this.PrePro.PoweredOn)
-                this.PrePro.PowerOn();
-
-            this.PrePro.InputSAT();
         }
 
         protected void DvrOnAv() {
