@@ -43,6 +43,7 @@ namespace HTControl {
 
             this.Oppo.OnDiscTypeUpdate += OppoOnDiscTypeUpdate;
             this.Oppo.OnAudioTypeUpdate += OppoOnAudioUpdate;
+            this.Oppo.OnPowerUpdate += OppoOnPowerUpdate;
         }
 
         protected void ProcessSpeechCommand(SpeechControl.ComponentControl.SpeechCommand command) {
@@ -68,6 +69,8 @@ namespace HTControl {
                     break;
 
                 case SpeechControl.ComponentControl.SpeechCommand.WatchMovie:
+                    this.Oppo.Eject();
+
                     if(!this.PrePro.PoweredOn)
                         this.PrePro.PowerOn();
 
@@ -121,8 +124,19 @@ namespace HTControl {
         }
 
         public void Dispose() {
-            if (this.SpeechThread != null && this.SpeechThread.IsAlive)
+            if(this.SpeechThread != null && this.SpeechThread.IsAlive)
                 this.SpeechThread.Abort();
+        }
+
+        /// Called when Oppo power status changes. If turning off, we turn off
+        /// everything. If turning on, we warm up the prepro
+        protected void OppoOnPowerUpdate(Boolean power) {
+            if(power) {
+                this.ListenAudioOnOppo(true);
+            } else {
+                this.TV.PowerOff();
+                this.PrePro.PowerOff();
+            }
         }
 
         protected void OppoOnDiscTypeUpdate(OppoBdp83.DiscType type) {
@@ -130,8 +144,7 @@ namespace HTControl {
                 this.WatchVideoOnOppo();
             } else {
                 // we assume it is an audio disc
-                switch (type)
-                {
+                switch(type) {
                     case OppoBdp83.DiscType.DVDAudio:
                     case OppoBdp83.DiscType.SuperAudioCD:
                         this.ListenAudioOnOppo(true);
@@ -180,16 +193,13 @@ namespace HTControl {
         }
 
         protected void ListenAudioOnOppo(Boolean multichannel) {
-            if (!this.PrePro.PoweredOn) {
+            if(!this.PrePro.PoweredOn) {
                 this.PrePro.PowerOn();
             }
 
-            if (multichannel)
-            {
+            if(multichannel) {
                 this.PrePro.Input8Channel();
-            }
-            else
-            {
+            } else {
                 this.PrePro.InputCD();
             }
         }
