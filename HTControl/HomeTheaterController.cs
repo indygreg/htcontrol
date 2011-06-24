@@ -15,6 +15,14 @@ namespace HTControl {
         private static string PreProPort = "COM4";
         private static string OppoPort = "COM5";
 
+        protected enum TheaterMode {
+            Off,
+            Oppo,
+            Dvr,
+        }
+
+        protected TheaterMode Mode = TheaterMode.Off;
+
         protected SpeechControl.ComponentControl SpeechComponentControl;
         protected Thread SpeechThread;
 
@@ -51,7 +59,7 @@ namespace HTControl {
             this.Ir.OnDvrChannelDown += WatchDvr;
             this.Ir.OnDvrChannelUp += WatchDvr;
             this.Ir.OnDvrAv += DvrOnAv;
-            this.Ir.OnOppoOk += WatchVideoOnOppo;
+            this.Ir.OnOppoOk += OppoOnOk;
         }
 
         protected void ProcessSpeechCommand(SpeechControl.ComponentControl.SpeechCommand command) {
@@ -142,6 +150,10 @@ namespace HTControl {
             if(power) {
                 this.ListenAudioOnOppo(true);
             } else {
+                if(this.Mode == TheaterMode.Dvr)
+                    return;
+
+                this.Mode = TheaterMode.Off;
                 this.TV.PowerOff();
                 this.PrePro.PowerOff();
             }
@@ -181,7 +193,16 @@ namespace HTControl {
             }
         }
 
+        protected void OppoOnOk() {
+            if(this.Mode == TheaterMode.Oppo)
+                return;
+
+            this.WatchVideoOnOppo();
+        }
+
         protected void WatchDvr() {
+            this.Mode = TheaterMode.Dvr;
+
             if(!this.PrePro.PoweredOn)
                 this.PrePro.PowerOn();
 
@@ -195,11 +216,15 @@ namespace HTControl {
         }
 
         protected void DvrOnAv() {
+            this.Mode = TheaterMode.Off;
+
             this.TV.PowerOff();
             this.PrePro.PowerOff();
         }
 
         protected void WatchVideoOnOppo() {
+            this.Mode = TheaterMode.Oppo;
+
             if(!this.PrePro.PoweredOn) {
                 this.PrePro.PowerOn();
             }
@@ -219,6 +244,8 @@ namespace HTControl {
         }
 
         protected void ListenAudioOnOppo(Boolean multichannel) {
+            this.Mode = TheaterMode.Oppo;
+
             if(!this.PrePro.PoweredOn) {
                 this.PrePro.PowerOn();
             }
