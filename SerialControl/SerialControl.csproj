@@ -68,6 +68,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="EmotivaPrePro.cs" />
+    <Compile Include="OppoBdp83.cs" />
     <Compile Include="PioneerTV.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SerialControlledDevice.cs" />

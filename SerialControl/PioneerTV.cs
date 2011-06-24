@@ -135,6 +135,11 @@ namespace SerialControl
             return SendCommand(command, null);
         }
 
+        protected override void OnAvailableBytes(byte[] buffer, int count)
+        {
+            
+        }
+
         public string GetInput()
         {
             string val = SendCommand("INP");

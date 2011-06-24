@@ -19,6 +19,8 @@ namespace SerialControl
 
     public class EmotivaPrePro : SerialControlledDevice
     {
+        protected static TimeSpan InputSwitchDelay = TimeSpan.FromMilliseconds(500);
+
         public Boolean PoweredOn { get; protected set; }
 
         public EmotivaPrePro(string port) : base(port)
@@ -59,6 +61,11 @@ namespace SerialControl
             this.Write(bytes);
         }
 
+        protected override void OnAvailableBytes(byte[] buffer, int count)
+        {
+            
+        }
+
         public void PowerToggle()
         {
             SendCommand("@111", TimeSpan.FromSeconds(3));
@@ -79,52 +86,52 @@ namespace SerialControl
 
         public void InputCD()
         {
-            SendCommand("@114");
+            SendCommand("@114", InputSwitchDelay);
         }
 
         public void InputTape()
         {
-            SendCommand("@115");
+            SendCommand("@115", InputSwitchDelay);
         }
 
         public void InputSAT()
         {
-            SendCommand("@116");
+            SendCommand("@116", InputSwitchDelay);
         }
 
         public void InputDVD()
         {
-            SendCommand("@117");
+            SendCommand("@117", InputSwitchDelay);
         }
 
         public void InputPhono()
         {
-            SendCommand("@118");
+            SendCommand("@118", InputSwitchDelay);
         }
 
         public void InputTuner()
         {
-            SendCommand("@119");
+            SendCommand("@119", InputSwitchDelay);
         }
 
         public void InputVID1()
         {
-            SendCommand("@11A");
+            SendCommand("@11A", InputSwitchDelay);
         }
 
         public void InputVCR()
         {
-            SendCommand("@11B");
+            SendCommand("@11B", InputSwitchDelay);
         }
 
         public void InputVID2()
         {
-            SendCommand("@11C");
+            SendCommand("@11C", InputSwitchDelay);
         }
 
         public void Input8Channel()
         {
-            SendCommand("@133");
+            SendCommand("@133", InputSwitchDelay);
         }
 
         public void DSPUp()

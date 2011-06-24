@@ -54,9 +54,21 @@ namespace SerialControl
                             Thread.Sleep(command.Delay);
                         }
                     }
+
+                    while(this.sp.BytesToRead > 0) {
+                        var read = new Byte[this.sp.BytesToRead];
+
+                        var count = this.sp.Read(read, 0, read.Length);
+
+                        this.OnAvailableBytes(read, count);
+                    }
                 }
             });
             this.thread.Start();
+        }
+
+        protected virtual void OnAvailableBytes(Byte[] buffer, Int32 count) {
+            throw new NotImplementedException();
         }
 
         /// <summary>

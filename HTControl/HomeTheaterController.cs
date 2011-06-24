@@ -4,6 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 
+using SerialControl;
+
 namespace HTControl {
     /// <summary>
     /// Represents the master controller for the home theater
@@ -11,14 +13,17 @@ namespace HTControl {
     public class HomeTheaterController : IDisposable {
         private static string TelevisionPort = "COM3";
         private static string PreProPort = "COM4";
+        private static string OppoPort = "COM5";
 
         protected SpeechControl.ComponentControl SpeechComponentControl;
         protected Thread SpeechThread;
 
         protected SerialControl.PioneerTv TV;
         protected SerialControl.EmotivaPrePro PrePro;
+        protected SerialControl.OppoBdp83 Oppo;
 
         public HomeTheaterController() {
+            /*
             this.SpeechThread = new Thread(() =>
             {
                 this.SpeechComponentControl = new SpeechControl.ComponentControl();
@@ -26,9 +31,18 @@ namespace HTControl {
             });
             this.SpeechThread.SetApartmentState(ApartmentState.MTA);
             this.SpeechThread.Start();
+            */
 
+            this.InitializeComponents();
+        }
+
+        protected void InitializeComponents() {
             this.TV = new SerialControl.PioneerTv(TelevisionPort);
             this.PrePro = new SerialControl.EmotivaPrePro(PreProPort);
+            this.Oppo = new SerialControl.OppoBdp83(OppoPort);
+
+            this.Oppo.OnDiscTypeUpdate += OppoOnDiscTypeUpdate;
+            this.Oppo.OnAudioTypeUpdate += OppoOnAudioUpdate;
         }
 
         protected void ProcessSpeechCommand(SpeechControl.ComponentControl.SpeechCommand command) {
@@ -42,64 +56,46 @@ namespace HTControl {
                     break;
 
                 case SpeechControl.ComponentControl.SpeechCommand.WatchTelevision:
-                    this.SendCommands(() =>
-                    {
-                        if(!this.PrePro.PoweredOn)
-                            this.PrePro.PowerOn();
+                    if(!this.PrePro.PoweredOn)
+                        this.PrePro.PowerOn();
 
-                        this.PrePro.InputSAT();
-                        return true;
+                    this.PrePro.InputSAT();
+                    if(!this.TV.PoweredOn)
+                        this.TV.PowerOn();
 
-                    }, () =>
-                    {
-                        if(!this.TV.PoweredOn)
-                            this.TV.PowerOn();
-
-                        this.TV.SetInputHDMI1();
-                        this.TV.SetVolume(0);
-                        return true;
-                    });
+                    this.TV.SetInputHDMI1();
+                    this.TV.SetVolume(0);
                     break;
 
                 case SpeechControl.ComponentControl.SpeechCommand.WatchMovie:
-                    this.SendCommands(() =>
-                    {
-                        if(!this.PrePro.PoweredOn)
-                            this.PrePro.PowerOn();
+                    if(!this.PrePro.PoweredOn)
+                        this.PrePro.PowerOn();
 
-                        this.PrePro.InputDVD();
-                        this.PrePro.Input8Channel();
+                    this.PrePro.InputDVD();
+                    this.PrePro.Input8Channel();
 
-                        return true;
-                    },
-                    () =>
-                    {
+                    if(!this.TV.PoweredOn)
+                        this.TV.PowerOn();
 
-                        if(!this.TV.PoweredOn)
-                            this.TV.PowerOn();
+                    this.TV.SetInputHDMI1();
+                    this.TV.SetVolume(0);
 
-                        this.TV.SetInputHDMI1();
-                        this.TV.SetVolume(0);
-
-                        return true;
-                    });
                     break;
 
                 case SpeechControl.ComponentControl.SpeechCommand.ViewComputer:
-                    this.SendCommands(() =>
-                    {
-                        if(!this.TV.PoweredOn)
-                            this.TV.PowerOn();
 
-                        this.TV.SetInputHDMI2();
-                        this.TV.SetVolume(20);
+                    if(!this.TV.PoweredOn)
+                        this.TV.PowerOn();
 
-                        return true;
-                    }, () =>
-                    {
-                        this.PrePro.PowerOff();
-                        return true;
-                    });
+                    this.TV.SetInputHDMI2();
+                    this.TV.SetVolume(0);
+
+                    if(!this.PrePro.PoweredOn) {
+                        this.PrePro.PowerOn();
+                    }
+
+                    this.PrePro.InputVID1();
+
 
                     break;
 
@@ -129,23 +125,72 @@ namespace HTControl {
                 this.SpeechThread.Abort();
         }
 
-        protected void SendCommands(params Func<Boolean>[] expressions) {
-            var threads = new List<Thread>();
+        protected void OppoOnDiscTypeUpdate(OppoBdp83.DiscType type) {
+            if((type & OppoBdp83.DiscType.Video) > 0) {
+                this.WatchVideoOnOppo();
+            } else {
+                // we assume it is an audio disc
+                switch (type)
+                {
+                    case OppoBdp83.DiscType.DVDAudio:
+                    case OppoBdp83.DiscType.SuperAudioCD:
+                        this.ListenAudioOnOppo(true);
+                        break;
 
-            foreach (var expression in expressions) {
-                var thread = new Thread(() => { expression(); });
-                thread.SetApartmentState(ApartmentState.MTA);
-                thread.Start();
-                threads.Add(thread);
+                    default:
+                        this.ListenAudioOnOppo(false);
+                        break;
+                }
+            }
+        }
+
+        /// When the Oppo changes audio tracks, ensure we are on the most appropriate input
+        /// The stereo DACs are higher quality (theoretically), so we use them if we have
+        /// 2 channels or less
+        protected void OppoOnAudioUpdate(OppoBdp83.AudioType audioType, Int32 currentTrack, Int32 availableTracks, String language, OppoBdp83.ChannelsDescription channels) {
+            switch(channels) {
+                case OppoBdp83.ChannelsDescription.Mono:
+                case OppoBdp83.ChannelsDescription.Stereo:
+                    this.PrePro.InputCD();
+                    break;
+
+                default:
+                    this.PrePro.Input8Channel();
+                    break;
+            }
+        }
+
+        protected void WatchVideoOnOppo() {
+            if(!this.PrePro.PoweredOn) {
+                this.PrePro.PowerOn();
             }
 
-            foreach (var thread in threads)
+            // switches HDMI to video
+            this.PrePro.InputDVD();
+
+            // switches audio to reasonable default
+            this.PrePro.Input8Channel();
+
+            if(!this.TV.PoweredOn) {
+                this.TV.PowerOn();
+            }
+
+            this.TV.SetInputHDMI1();
+            this.TV.SetVolume(0);
+        }
+
+        protected void ListenAudioOnOppo(Boolean multichannel) {
+            if (!this.PrePro.PoweredOn) {
+                this.PrePro.PowerOn();
+            }
+
+            if (multichannel)
             {
-                thread.Join(15000);
-                if (thread.IsAlive)
-                {
-                    thread.Abort();
-                }
+                this.PrePro.Input8Channel();
+            }
+            else
+            {
+                this.PrePro.InputCD();
             }
         }
     }
