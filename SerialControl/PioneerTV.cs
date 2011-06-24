@@ -5,6 +5,9 @@ namespace SerialControl
 
     public class PioneerTv : SerialControlledDevice
     {
+        protected static TimeSpan InputSwitchDelay = TimeSpan.FromMilliseconds(1000);
+        protected static TimeSpan PowerDelay = TimeSpan.FromSeconds(3);
+
         protected bool power;
         protected bool osd;
         protected string input;
@@ -53,7 +56,11 @@ namespace SerialControl
             }
         }
 
-        public string SendCommand(string command, string parameter)
+        public String SendCommand(String command, String parameter) {
+            return this.SendCommand(command, parameter, MinimumCommandDelay);
+        }
+
+        public string SendCommand(string command, string parameter, TimeSpan delay)
         {
             if (command == null)
             {
@@ -105,7 +112,7 @@ namespace SerialControl
 
             buffer[parameter == null ? 6 : 9] = 3;
 
-            Write(buffer);
+            Write(buffer, delay);
 
             DateTime started = DateTime.Now;
 
@@ -135,6 +142,10 @@ namespace SerialControl
             return SendCommand(command, null);
         }
 
+        public string SendCommand(String command, TimeSpan delay) {
+            return this.SendCommand(command, null, delay);
+        }
+
         protected override void OnAvailableBytes(byte[] buffer, int count)
         {
             
@@ -159,7 +170,7 @@ namespace SerialControl
             if(this.input == arg)
                 return;
 
-            SendCommand("INP", arg);
+            SendCommand("INP", arg, InputSwitchDelay);
             this.input = arg;
         }
 
@@ -175,7 +186,7 @@ namespace SerialControl
 
         public void PowerOn()
         {
-            SendCommand("PON");
+            SendCommand("PON", PowerDelay);
             power = true;
             GetInput();
             GetVolume();
