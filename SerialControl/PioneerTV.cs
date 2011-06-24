@@ -1,21 +1,32 @@
-﻿
-namespace SerialControl
-{
-    using System;
+﻿using System;
+using System.Collections.Generic;
+using System.Threading;
 
-    public class PioneerTv : SerialControlledDevice
-    {
+
+namespace SerialControl {
+    public class PioneerTv : SerialControlledDevice {
         protected static TimeSpan InputSwitchDelay = TimeSpan.FromMilliseconds(1000);
         protected static TimeSpan PowerDelay = TimeSpan.FromSeconds(3);
 
-        protected bool power;
-        protected bool osd;
+        protected enum ResponseParseState {
+            Beginning,
+            Middle
+        }
+
+        protected bool power = false;
+        protected bool osd = false;
         protected string input;
         protected int volume;
 
+        protected ResponseParseState ResponseState = ResponseParseState.Beginning;
+        protected String PartialResponse = String.Empty;
+
+        protected Queue<String> Responses = new Queue<String>();
+        protected Object Locker = new Object();
+        protected AutoResetEvent ResponsesAvailable = new AutoResetEvent(false); 
+
         public PioneerTv(string port)
-            : base(port)
-        {
+            : base(port) {
             //sp.ReadTimeout = 1000;
 
             this.RefreshStatus();
@@ -27,18 +38,14 @@ namespace SerialControl
         /// <remarks>
         /// Visual OSD is disabled during refresh to avoid any user disruptions
         /// </remarks>
-        public void RefreshStatus()
-        {
+        public void RefreshStatus() {
             string OSD = this.SendCommand("OSD");
 
             bool previousOsd;
 
-            if (OSD == "S00")
-            {
+            if(OSD == "S00") {
                 osd = false;
-            }
-            else
-            {
+            } else {
                 osd = true;
                 this.OSDOff();
             }
@@ -50,8 +57,7 @@ namespace SerialControl
 
             this.power = this.input == "XXX" ? false : true;
 
-            if (previousOsd)
-            {
+            if(previousOsd) {
                 this.OSDOn();
             }
         }
@@ -60,20 +66,16 @@ namespace SerialControl
             return this.SendCommand(command, parameter, MinimumCommandDelay);
         }
 
-        public string SendCommand(string command, string parameter, TimeSpan delay)
-        {
-            if (command == null)
-            {
+        public string SendCommand(string command, string parameter, TimeSpan delay) {
+            if(command == null) {
                 throw new ArgumentNullException(command);
             }
 
-            if (command.Length != 3)
-            {
+            if(command.Length != 3) {
                 throw new ArgumentException("argument must be 3 characters long", command);
             }
 
-            if (parameter is string && parameter.Length != 3)
-            {
+            if(parameter is string && parameter.Length != 3) {
                 throw new ArgumentException("argument must be characters long", parameter);
             }
 
@@ -87,8 +89,7 @@ namespace SerialControl
 
             byte[] commandBytes = System.Text.ASCIIEncoding.ASCII.GetBytes(command);
 
-            if (commandBytes.Length != 3)
-            {
+            if(commandBytes.Length != 3) {
                 throw new Exception("unable to convert command to ascii string");
             }
 
@@ -96,12 +97,10 @@ namespace SerialControl
             buffer[4] = commandBytes[1];
             buffer[5] = commandBytes[2];
 
-            if (parameter is string)
-            {
+            if(parameter is string) {
                 byte[] argumentBytes = System.Text.ASCIIEncoding.ASCII.GetBytes(parameter);
 
-                if (argumentBytes.Length != 3)
-                {
+                if(argumentBytes.Length != 3) {
                     throw new Exception("unable to convert parameter to ascii string");
                 }
 
@@ -112,33 +111,18 @@ namespace SerialControl
 
             buffer[parameter == null ? 6 : 9] = 3;
 
-            Write(buffer, delay);
+            this.Write(buffer, delay);
 
-            DateTime started = DateTime.Now;
-
-            /*
-            while (this.sp == null || sp.BytesToRead < 5 || DateTime.Now - started < new TimeSpan(0, 0, 1))
-            {
-                ;
-            }
-
-            if (sp.BytesToRead < 5)
-            {
+            if(!this.ResponsesAvailable.WaitOne(TimeSpan.FromMilliseconds(1000))) {
                 return "";
             }
-            
-            int toRead = sp.BytesToRead;
 
-            byte[] response = new byte[toRead];
-            int read = sp.Read(response, 0, toRead);
-
-            return System.Text.ASCIIEncoding.ASCII.GetString(response, read == 5 ? 1 : 4, 3);
-             */
-            return "";
+            lock(this.Locker) {
+                return this.Responses.Dequeue();
+            }
         }
 
-        public string SendCommand(string command)
-        {
+        public string SendCommand(string command) {
             return SendCommand(command, null);
         }
 
@@ -146,22 +130,47 @@ namespace SerialControl
             return this.SendCommand(command, null, delay);
         }
 
-        protected override void OnAvailableBytes(byte[] buffer, int count)
-        {
-            
+        protected override void OnAvailableBytes(byte[] buffer, int count) {
+            // responses start with 0x02 and end with 0x03. everything in between is payload
+            foreach(Byte b in buffer) {
+                if (this.ResponseState == ResponseParseState.Beginning) {
+                    if (b != 0x02) {
+                        throw new Exception("Unknown response format from TV");
+                    }
+
+                    this.ResponseState = ResponseParseState.Middle;
+                    continue;
+                }
+
+                // else we must be in the middle
+
+                // end of transmission
+                if (b == 0x03) {
+                    this.HandleFullResponse(this.PartialResponse);
+                    this.ResponseState = ResponseParseState.Beginning;
+                    this.PartialResponse = "";
+                    continue;
+                }
+
+                this.PartialResponse += (char)b;
+            }
         }
 
-        public string GetInput()
-        {
+        protected void HandleFullResponse(String response) {
+            lock(this.Locker) {
+                this.Responses.Enqueue(response);
+                this.ResponsesAvailable.Set();
+            }
+        }
+
+        public string GetInput() {
             string val = SendCommand("INP");
             input = val;
             return val;
         }
 
-        public void SetInput(int input)
-        {
-            if (input < 1 || input > 8)
-            {
+        public void SetInput(int input) {
+            if(input < 1 || input > 8) {
                 throw new ArgumentOutOfRangeException("input", "input must be between 1 and 8");
             }
 
@@ -174,99 +183,80 @@ namespace SerialControl
             this.input = arg;
         }
 
-        public void SetInputHDMI1()
-        {
+        public void SetInputHDMI1() {
             SetInput(4);
         }
 
-        public void SetInputHDMI2()
-        {
+        public void SetInputHDMI2() {
             SetInput(5);
         }
 
-        public void PowerOn()
-        {
+        public void PowerOn() {
             SendCommand("PON", PowerDelay);
             power = true;
             GetInput();
             GetVolume();
         }
 
-        public void PowerOff()
-        {
+        public void PowerOff() {
             SendCommand("POF");
             power = false;
             input = "XXX";
         }
 
-        public void MuteOn()
-        {
+        public void MuteOn() {
             SendCommand("AMT", "S01");
         }
 
-        public void MuteOff()
-        {
+        public void MuteOff() {
             SendCommand("AMT", "S00");
         }
 
-        public void SetVolume(int volume)
-        {
-            if (volume < 0 || volume > 60)
+        public void SetVolume(int volume) {
+            if(volume < 0 || volume > 60)
                 throw new ArgumentOutOfRangeException("volume must be between 0 and 60");
 
             string vol;
 
             // my n00b C# skills show
-            if (volume > 10)
-            {
+            if(volume > 10) {
                 vol = String.Format("0{0}", volume.ToString());
-            }
-            else if (volume > 0)
-            {
+            } else if(volume > 0) {
                 vol = String.Format("00{0}", volume.ToString());
-            }
-            else
-            {
+            } else {
                 vol = "000";
             }
 
             SendCommand("VOL", vol);
         }
 
-        public int GetVolume()
-        {
+        public int GetVolume() {
             //volume = int.Parse(SendCommand("VOL"));
             //return volume;
             return 0;
         }
 
-        public void OSDOff()
-        {
+        public void OSDOff() {
             SendCommand("OSD", "S00");
         }
 
-        public void OSDOn()
-        {
+        public void OSDOn() {
             SendCommand("OSD", "S01");
         }
 
-        public bool PoweredOn
-        {
+        public bool PoweredOn {
             get { return power; }
         }
 
-        public string Input
-        {
+        public string Input {
             get { return input; }
         }
 
-        public int Volume
-        {
+        public int Volume {
             get { return volume; }
         }
 
-        public bool OSD
-        {
+        public bool OSD {
             get { return osd; }
         }
     }
