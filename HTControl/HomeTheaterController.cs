@@ -21,6 +21,7 @@ namespace HTControl {
         protected SerialControl.PioneerTv TV;
         protected SerialControl.EmotivaPrePro PrePro;
         protected SerialControl.OppoBdp83 Oppo;
+        protected IrControl.UsbUirt Ir;
 
         public HomeTheaterController() {
             /*
@@ -40,10 +41,14 @@ namespace HTControl {
             this.TV = new SerialControl.PioneerTv(TelevisionPort);
             this.PrePro = new SerialControl.EmotivaPrePro(PreProPort);
             this.Oppo = new SerialControl.OppoBdp83(OppoPort);
+            this.Ir = new IrControl.UsbUirt();
 
             this.Oppo.OnDiscTypeUpdate += OppoOnDiscTypeUpdate;
             this.Oppo.OnAudioTypeUpdate += OppoOnAudioUpdate;
             this.Oppo.OnPowerUpdate += OppoOnPowerUpdate;
+
+            this.Ir.OnDvrOk += DvrOnOk;
+            this.Ir.OnDvrAv += DvrOnAv;
         }
 
         protected void ProcessSpeechCommand(SpeechControl.ComponentControl.SpeechCommand command) {
@@ -171,6 +176,24 @@ namespace HTControl {
                     this.PrePro.Input8Channel();
                     break;
             }
+        }
+
+        protected void DvrOnOk() {
+            if(!this.TV.PoweredOn)
+                this.TV.PowerOn();
+
+            this.TV.SetInputHDMI1();
+            this.TV.SetVolume(0);
+
+            if(!this.PrePro.PoweredOn)
+                this.PrePro.PowerOn();
+
+            this.PrePro.InputSAT();
+        }
+
+        protected void DvrOnAv() {
+            this.TV.PowerOff();
+            this.PrePro.PowerOff();
         }
 
         protected void WatchVideoOnOppo() {

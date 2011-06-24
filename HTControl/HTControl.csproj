@@ -109,6 +109,10 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\IrControl\IrControl.csproj">
+      <Project>{CEFC320B-1C92-4E57-AFFE-618ECEE27A1A}</Project>
+      <Name>IrControl</Name>
+    </ProjectReference>
     <ProjectReference Include="..\SerialControl\SerialControl.csproj">
       <Project>{5A1D3996-025A-474B-802F-68A510B9B7EB}</Project>
       <Name>SerialControl</Name>
