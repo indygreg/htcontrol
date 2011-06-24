@@ -52,11 +52,13 @@ namespace HTControl.IrControl {
             GenericCommand ev = null;
 
             switch(code) {
+                // OK button
                 case "230A011050A5":
                     ev = this.OnDvrOk;
                     break;
 
-                case "230A000450A5":
+                // Red C button
+                case "2308041050A5":
                     ev = this.OnDvrAv;
                     break;
 
